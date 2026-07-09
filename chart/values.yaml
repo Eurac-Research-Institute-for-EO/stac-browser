@@ -6,11 +6,11 @@ replicaCount: 1
 image:
   # -- Container image repository. Point this at your institution's registry
   # where you push the built fork image.
-  repository: ghcr.io/eurac/stac-browser
+  repository: ghcr.io/eurac-research-institute-for-eo/stac-browser
   # -- Image pull policy.
   pullPolicy: IfNotPresent
   # -- Image tag. Defaults to the chart appVersion when left empty.
-  tag: ""
+  tag: "eurac"
 
 # -- Secrets for pulling from a private registry, e.g. [{ name: regcred }].
 imagePullSecrets: []
