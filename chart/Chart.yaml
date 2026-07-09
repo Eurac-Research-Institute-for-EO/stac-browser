@@ -1,0 +1,17 @@
+apiVersion: v2
+name: stac-browser
+description: A Helm chart for STAC Browser — a static Vue SPA served by nginx.
+type: application
+# version is the chart version; bump on chart changes (SemVer).
+version: 0.1.0
+# appVersion tracks the STAC Browser app version (see package.json).
+appVersion: "5.0.0-rc.1"
+keywords:
+  - stac
+  - stac-browser
+  - catalog
+home: https://github.com/radiantearth/stac-browser
+sources:
+  - https://github.com/radiantearth/stac-browser
+maintainers:
+  - name: EURAC ARGOS

@@ -1,0 +1,133 @@
+# Default values for stac-browser.
+
+# -- Number of pod replicas (ignored when autoscaling.enabled is true).
+replicaCount: 1
+
+image:
+  # -- Container image repository. Point this at your institution's registry
+  # where you push the built fork image.
+  repository: ghcr.io/eurac/stac-browser
+  # -- Image pull policy.
+  pullPolicy: IfNotPresent
+  # -- Image tag. Defaults to the chart appVersion when left empty.
+  tag: ""
+
+# -- Secrets for pulling from a private registry, e.g. [{ name: regcred }].
+imagePullSecrets: []
+
+# -- Override the chart name used in resource names.
+nameOverride: ""
+# -- Override the full release name used in resource names.
+fullnameOverride: ""
+
+# STAC Browser runtime configuration.
+# Every key below is exported to the container as an `SB_<key>` environment
+# variable and turned into `runtime-config.js` by the image entrypoint at
+# startup. Keys must match the option names in config.schema.json.
+#
+# Type handling (performed by docker/docker-entrypoint.sh):
+#   - strings  -> quoted as-is
+#   - booleans -> true/false (pass "true"/"false")
+#   - arrays   -> comma-separated string, e.g. "https://a.org,https://b.org"
+#   - objects  -> raw JSON string, e.g. '{"Authorization":"Bearer x"}'
+#
+# NOTE: pathPrefix, historyMode and SB_CONFIG are BUILD-TIME options baked into
+# the image (Docker build args). Setting them here has NO effect — rebuild the
+# image instead.
+config:
+  catalogUrl: "https://earth-search.aws.element84.com/v1/"
+  catalogTitle: "STAC Browser"
+  # allowExternalAccess: "true"
+  # allowedDomains: "https://example.org,https://another.org"
+
+# -- Extra environment variables passed verbatim to the container (list of
+# {name, value} or valueFrom entries). Use for anything not in `config`.
+extraEnv: []
+
+# -- Extra environment variables sourced from ConfigMaps/Secrets.
+envFrom: []
+
+serviceAccount:
+  # -- Create a dedicated ServiceAccount.
+  create: true
+  # -- Annotations to add to the ServiceAccount.
+  annotations: {}
+  # -- ServiceAccount name. Generated from the fullname when empty.
+  name: ""
+
+# -- Annotations added to the Deployment's pods.
+podAnnotations: {}
+# -- Labels added to the Deployment's pods.
+podLabels: {}
+
+# -- Pod-level security context.
+podSecurityContext:
+  runAsNonRoot: true
+  # nginx-unprivileged runs as uid/gid 101.
+  runAsUser: 101
+  runAsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container-level security context.
+# readOnlyRootFilesystem is left false because the entrypoint writes
+# runtime-config.js into the web root at startup; enabling it requires
+# mounting writable emptyDirs for the web root and nginx temp paths.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Service type.
+  type: ClusterIP
+  # -- Service port.
+  port: 80
+
+# The container listens on 8080 (nginx-unprivileged); do not change unless the
+# image is rebuilt to listen elsewhere.
+containerPort: 8080
+
+ingress:
+  # -- Enable an Ingress for the Service.
+  enabled: false
+  # -- Ingress class name.
+  className: ""
+  # -- Ingress annotations.
+  annotations: {}
+  hosts:
+    - host: stac-browser.example.org
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- TLS configuration, e.g. [{ secretName: tls, hosts: [stac-browser.example.org] }].
+  tls: []
+
+# -- HTTP path used by liveness/readiness probes. Must match the served
+# pathPrefix (default "/"). If you rebuild with pathPrefix=/browser/, set this
+# to /browser/.
+probePath: "/"
+
+# -- Resource requests and limits.
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+
+autoscaling:
+  # -- Enable a HorizontalPodAutoscaler.
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# -- Node selector for pod scheduling.
+nodeSelector: {}
+# -- Tolerations for pod scheduling.
+tolerations: []
+# -- Affinity rules for pod scheduling.
+affinity: {}
