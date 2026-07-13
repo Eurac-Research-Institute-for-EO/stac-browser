@@ -3,7 +3,7 @@ name: Publish Docker Image
 on:
   push:
     branches:
-      - helm-chart
+      - manager
   release:
     types: [released]
   workflow_dispatch:
