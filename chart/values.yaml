@@ -31,14 +31,25 @@ fullnameOverride: ""
 #   - arrays   -> comma-separated string, e.g. "https://a.org,https://b.org"
 #   - objects  -> raw JSON string, e.g. '{"Authorization":"Bearer x"}'
 #
-# NOTE: pathPrefix, historyMode and SB_CONFIG are BUILD-TIME options baked into
-# the image (Docker build args). Setting them here has NO effect — rebuild the
-# image instead.
+# NOTE: historyMode and SB_CONFIG are BUILD-TIME options baked into the image
+# (Docker build args). Setting them here has NO effect — rebuild instead.
+# pathPrefix is now a RUNTIME option: the entrypoint applies SB_pathPrefix to
+# nginx and runtime-config.js at startup, so it MAY be set here. If you do, set
+# `probePath` below to the same value (e.g. "/browser/").
 config:
   catalogUrl: "https://earth-search.aws.element84.com/v1/"
   catalogTitle: "STAC Browser"
   # allowExternalAccess: "true"
   # allowedDomains: "https://example.org,https://another.org"
+  # pathPrefix: "/browser/"   # runtime-settable; keep probePath in sync
+
+  # Management UI (STAC API Transactions extension). Enables the "Manage" button
+  # next to Source/Share for creating/editing/deleting STAC entities. The button
+  # only renders when the target STAC API actually advertises transaction support
+  # (and, by default, the user is logged in). Defaults shown; uncomment to change.
+  # transactions: "true"                   # master switch for the Manage UI
+  # transactionsRequireLogin: "true"       # hide manage actions from anonymous users
+  # transactionsRequirePreflight: "true"   # gate actions on the API's OPTIONS `Allow` header
 
 # -- Extra environment variables passed verbatim to the container (list of
 # {name, value} or valueFrom entries). Use for anything not in `config`.
