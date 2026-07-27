@@ -46,10 +46,10 @@ config:
   # Management UI (STAC API Transactions extension). Enables the "Manage" button
   # next to Source/Share for creating/editing/deleting STAC entities. The button
   # only renders when the target STAC API actually advertises transaction support
-  # (and, by default, the user is logged in). Defaults shown; uncomment to change.
-  # transactions: "true"                   # master switch for the Manage UI
-  # transactionsRequireLogin: "true"       # hide manage actions from anonymous users
-  # transactionsRequirePreflight: "true"   # gate actions on the API's OPTIONS `Allow` header
+  # (and, by default, the user is logged in). Values below match the app defaults.
+  transactions: "true"                   # master switch for the Manage UI
+  transactionsRequireLogin: "true"       # hide manage actions from anonymous users
+  transactionsRequirePreflight: "true"   # gate actions on the API's OPTIONS `Allow` header
 
 # -- Extra environment variables passed verbatim to the container (list of
 # {name, value} or valueFrom entries). Use for anything not in `config`.
