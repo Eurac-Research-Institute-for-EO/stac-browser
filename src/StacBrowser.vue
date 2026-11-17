@@ -418,6 +418,12 @@ export default defineComponent({
         }
       }
 
+      if (resetOp === 'resetCatalog') {
+        // Never carry credentials over to another catalog. The action clears
+        // the credentials synchronously before it starts any async work.
+        this.$store.dispatch('auth/reset').catch(error => console.error(error));
+      }
+
       this.$store.commit(resetOp);
       this.parseQuery(to);
 

@@ -93,6 +93,8 @@ export default defineComponent({
   async created() {
     // Reset loaded STAC catalog
     this.$store.commit('resetCatalog', true);
+    // Discard the credentials of the previously loaded catalog
+    await this.$store.dispatch('auth/reset');
     // Load entries from STAC Index
     try {
       let response = await axios.get('https://stacindex.org/api/catalogs');

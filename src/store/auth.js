@@ -191,6 +191,21 @@ export default function getStore(router) {
           cx.commit('resetHeaders');
         }
       },
+      // Discards the credentials and authentication headers of the previous
+      // catalog. This is called when the user switches to another catalog so
+      // that its requests are never sent with credentials it doesn't own.
+      async reset(cx) {
+        await cx.dispatch('updateCredentials', null);
+        await cx.dispatch('cancelActions');
+        // Remove credentials stored by the authentication method itself,
+        // e.g. the user data stored by the OIDC client. This does not trigger
+        // a logout redirect.
+        try {
+          await cx.getters.method.close();
+        } catch (error) {
+          console.error(error);
+        }
+      },
       // Actions are either plain functions or objects with a `run` function
       // and an optional `cancel` function (see cancelActions).
       async executeActions(cx) { // eslint-disable-line require-await
