@@ -97,6 +97,7 @@ export default {
   },
   computed: {
     ...mapState(['downloads', 'requestHeaders', 'buildTileUrlTemplate', 'useTileLayerAsFallback']),
+    ...mapState('auth', { authHeaders: 'headers' }),
     ...mapGetters(['getRequestUrl']),
     ...mapGetters('auth', ['isLoggedIn']),
     loading() {
@@ -174,7 +175,7 @@ export default {
       else if (typeof this.data.method === 'string' && this.data.method.toUpperCase() !== 'GET') {
         return true;
       }
-      else if (size(this.data.headers) > 0 || size(this.requestHeaders) > 0) {
+      else if (size(this.data.headers) > 0 || size(this.requestHeaders) > 0 || size(this.authHeaders) > 0) {
         return true;
       }
       return false;

@@ -664,8 +664,10 @@ Please note that this option can only be provided through a config file and is n
 
 ***experimental***
 
-The headers given in this option are added to all requests that are sent to the selected STAC catalog or API.
+The headers given in this option are added to all requests that are sent to the configured STAC catalog or API.
 This is affected by [`allowedDomains`](#alloweddomains).
+
+**Note:** This option requires [`catalogUrl`](#catalogurl) to be configured. It is ignored in catalog-selection mode, because its values could otherwise be sent to another catalog.
 
 Example: `{'Authorization': 'Bearer 134567984623223'}` adds a Bearer token to the HTTP headers.
 
@@ -673,8 +675,10 @@ Example: `{'Authorization': 'Bearer 134567984623223'}` adds a Bearer token to th
 
 ***experimental***
 
-The query parameters given in this option are added to all requests that are sent to the selected STAC catalog or API.
+The query parameters given in this option are added to all requests that are sent to the configured STAC catalog or API.
 This is affected by [`allowedDomains`](#alloweddomains).
+
+**Note:** This option requires [`catalogUrl`](#catalogurl) to be configured. It is ignored in catalog-selection mode, because its values could otherwise be sent to another catalog.
 
 Example: `{'f': 'json'}` adds a `f` query parameter to the HTTP URL, e.g. `https://example.com?f=json`.
 
