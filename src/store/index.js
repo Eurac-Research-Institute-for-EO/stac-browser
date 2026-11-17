@@ -143,6 +143,15 @@ function getStore(config, router) {
     currentApiCollectionsSearchId: null
   });
 
+  // Static credentials from the configuration can only be scoped safely when
+  // the catalog is known. In catalog-selection mode the selected catalog
+  // changes, so they are ignored to avoid sending them to another catalog.
+  const hasStaticCredentials = (isObject(config.requestHeaders) && size(config.requestHeaders) > 0)
+    || (isObject(config.requestQueryParameters) && size(config.requestQueryParameters) > 0);
+  if (!config.catalogUrl && hasStaticCredentials) {
+    console.warn('STAC Browser: requestHeaders and requestQueryParameters are ignored when catalogUrl is not configured, because they could be sent to another catalog.');
+  }
+
   return createStore({
     strict: import.meta.env.NODE_ENV !== 'production',
     modules: {
@@ -483,8 +492,12 @@ function getStore(config, router) {
           if (!getters.isExternalUrl(absoluteUrl)) {
             // Check whether private params are present and add them if the URL is part of the catalog
             addQueryIfNotExists(absoluteUrl, state.privateQueryParameters);
-            // Check if we need to add global request params
-            addQueryIfNotExists(absoluteUrl, state.globalRequestQueryParameters);
+            // Global request params from the configuration are only applied
+            // when the catalog is known, otherwise they could be sent to
+            // another catalog that the user selects later.
+            if (!state.allowSelectCatalog) {
+              addQueryIfNotExists(absoluteUrl, state.globalRequestQueryParameters);
+            }
             if (addLocalQueryParams) {
               // Check if we need to add local request params
               addQueryIfNotExists(absoluteUrl, state.localRequestQueryParameters);

@@ -32,7 +32,10 @@ export function stacRequestOptions(cx, link) {
   if (hasText(link.type)) {
     headers.Accept = link.type;
   }
-  if (!cx.getters.isExternalUrl(url)) {
+  // Static credentials from the configuration are only sent when the catalog
+  // is known. In catalog-selection mode they would follow the user's catalog
+  // choice and could be sent to another catalog.
+  if (!cx.state.allowSelectCatalog && !cx.getters.isExternalUrl(url)) {
     Object.assign(headers, cx.state.requestHeaders);
   }
   if (cx.getters.isCredentialUrl(url)) {

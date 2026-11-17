@@ -16,7 +16,7 @@ const catalogBUrl = 'https://b.example/stac/catalog.json';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Accept, Accept-Language, X-Api-Key'
+  'Access-Control-Allow-Headers': 'Accept, Accept-Language, X-Api-Key, X-Static-Token'
 };
 
 function createCatalog(url, title) {
@@ -39,7 +39,8 @@ test.describe('Authentication credential scoping', () => {
       http.options(/https:\/\/(a|b)\.example\/.*/, () => new HttpResponse(null, { status: 204, headers: corsHeaders })),
       http.get(catalogAUrl, ({ request }) => {
         const headers = {
-          apiKey: request.headers.get('x-api-key')
+          apiKey: request.headers.get('x-api-key'),
+          staticToken: request.headers.get('x-static-token')
         };
         requests.a.push(headers);
         if (headers.apiKey !== 'secret-a') {
@@ -49,14 +50,16 @@ test.describe('Authentication credential scoping', () => {
       }),
       http.get(catalogBUrl, ({ request }) => {
         requests.b.push({
-          apiKey: request.headers.get('x-api-key')
+          apiKey: request.headers.get('x-api-key'),
+          staticToken: request.headers.get('x-static-token')
         });
         return HttpResponse.json(catalogB, { headers: corsHeaders });
       })
     );
 
     await configureBrowser(page, {
-      authConfig: { type: 'apiKey', in: 'header', name: 'X-Api-Key' }
+      authConfig: { type: 'apiKey', in: 'header', name: 'X-Api-Key' },
+      requestHeaders: { 'X-Static-Token': 'static-secret' }
     });
 
     await page.goto(HOME_PATH);
@@ -75,6 +78,9 @@ test.describe('Authentication credential scoping', () => {
     await expect(page.getByRole('heading', { name: /credential test catalog a/i })).toBeVisible({ timeout: 10000 });
     expect(requests.a.some(r => r.apiKey === 'secret-a')).toBe(true);
 
+    // Static request headers are ignored in catalog-selection mode
+    expect(requests.a.every(r => r.staticToken === null)).toBe(true);
+
     // Switch to catalog B
     await page.getByRole('button', { name: /browse/i }).click();
     await page.getByRole('link', { name: /switch catalog/i }).click();
@@ -86,5 +92,6 @@ test.describe('Authentication credential scoping', () => {
     await expect(page.getByRole('heading', { name: /credential test catalog b/i })).toBeVisible({ timeout: 10000 });
     expect(requests.b.length).toBeGreaterThan(0);
     expect(requests.b.every(r => r.apiKey === null)).toBe(true);
+    expect(requests.b.every(r => r.staticToken === null)).toBe(true);
   });
 });

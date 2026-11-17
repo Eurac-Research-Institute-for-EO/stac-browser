@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added basic support for the STAC API extensions Transactions (for Items) and Collection Transactions
   - Adds three new config options: `transactions`, `transactionsRequireLogin` and `transactionsRequirePreflight`
 
+### Changed
+
+- Authentication credentials are scoped to the catalog they were issued for and are discarded when switching catalogs
+- `requestHeaders` and `requestQueryParameters` are only applied when `catalogUrl` is configured; they are ignored in catalog-selection mode
+
+### Fixed
+
+- Credentials from a previously selected catalog are no longer sent to a newly selected catalog
+
 ## [5.0.0-rc.2] - 2026-06-23
 
 ### Added
