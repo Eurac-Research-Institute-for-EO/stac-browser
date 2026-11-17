@@ -2,6 +2,7 @@ import Auth from '../auth';
 import i18n from '../i18n';
 import AuthUtils from '../components/auth/utils';
 import { Cookies } from '../browser-store';
+import { hasText } from 'stac-js/src/utils.js';
 
 const handleAuthError = async (cx, error) => {
   cx.commit('showGlobalError', {
@@ -21,6 +22,16 @@ export default function getStore(router) {
       method: () => new Auth(router),
       actions: [],
       credentials: null,
+      // Headers set by the authentication method. They are kept separate from
+      // the headers configured for the catalog through the `requestHeaders`
+      // option so that they can be scoped to the catalog they belong to.
+      headers: {},
+      // The catalog URL the current credentials are valid for.
+      scope: null,
+      // The catalog URL a pending login is for. This is used when a request
+      // fails before the catalog URL could be determined, e.g. when the
+      // landing page of a catalog is protected.
+      pendingScope: null,
       inProgress: false
     },
     getters: {
@@ -40,6 +51,23 @@ export default function getStore(router) {
     mutations: {
       setCredentials(state, credentials) {
         state.credentials = credentials; // e.g. Username + Password or a Bearer Token
+      },
+      setHeader(state, { key, value }) {
+        if (typeof value === 'undefined') {
+          delete state.headers[key];
+        }
+        else {
+          state.headers[key] = value;
+        }
+      },
+      resetHeaders(state) {
+        state.headers = {};
+      },
+      setScope(state, scope) {
+        state.scope = hasText(scope) ? scope : null;
+      },
+      setPendingScope(state, scope) {
+        state.pendingScope = hasText(scope) ? scope : null;
       },
       setMethod(state, method) {
         state.method = () => method;
@@ -64,6 +92,9 @@ export default function getStore(router) {
       async updateMethod(cx, config) {
         if (!Auth.equals(cx.getters.method, config)) {
           await cx.getters.method.close();
+          // The headers of the previous method must not be sent with the new method.
+          cx.commit('resetHeaders');
+          cx.commit('setScope', null);
         }
 
         const changeListener = async (isLoggedIn, credentials) => {
@@ -130,15 +161,34 @@ export default function getStore(router) {
       async updateCredentials(cx, value = null) { // eslint-disable-line require-await
         cx.commit('setCredentials', value);
         const intent = cx.getters.method.updateStore(value);
+        if (value) {
+          // Bind the credentials to the catalog they were issued for. If the
+          // catalog is not known yet, use the scope of the request that
+          // triggered the login.
+          cx.commit('setScope', cx.state.pendingScope || cx.rootGetters.credentialCatalogUrl);
+          cx.commit('setPendingScope', null);
+        }
+        else {
+          cx.commit('setScope', null);
+          cx.commit('setPendingScope', null);
+        }
         if (intent.query) {
           cx.commit('setQueryParameter', intent.query, { root: true });
         }
         else if (intent.header) {
-          cx.commit('setRequestHeader', intent.header, { root: true });
+          if (value) {
+            cx.commit('setHeader', intent.header);
+          }
+          else {
+            cx.commit('resetHeaders');
+          }
         }
         else if (intent.cookie) {
           const cookie = new Cookies(true);
           cookie.setItem(intent.cookie.key, intent.cookie.value);
+        }
+        else if (!value) {
+          cx.commit('resetHeaders');
         }
       },
       // Actions are either plain functions or objects with a `run` function
@@ -171,6 +221,7 @@ export default function getStore(router) {
           }
         }
         cx.commit('resetActions');
+        cx.commit('setPendingScope', null);
       }
     }
   };

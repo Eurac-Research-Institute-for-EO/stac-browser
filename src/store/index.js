@@ -16,6 +16,15 @@ import { getBest } from 'stac-js/src/locales';
 import { TYPES } from "../components/ApiCapabilitiesMixin";
 import BrowserStorage from "../browser-store.js";
 
+// Returns the origin of the given URL, or null if it can't be parsed.
+function getUrlOrigin(url) {
+  try {
+    return new URL(String(url)).origin;
+  } catch (error) {
+    return null;
+  }
+}
+
 // type is either 'collections' or 'items', depending on which endpoint the list was loaded from
 function updateApiChildrenState(state, stac, type, list, next = false, prev = false) {
   if (!stac?.isCatalogLike) {
@@ -427,8 +436,8 @@ function getStore(config, router) {
         }
         return getters.getRequestUrl(url, null, true);
       },
-      isExternalUrl: state => (absoluteUrl, whitelist = true) => {
-        if (!state.catalogUrl) {
+      isExternalUrl: state => (absoluteUrl, whitelist = true, catalogUrl = state.catalogUrl) => {
+        if (!catalogUrl) {
           return false;
         }
         if (!(absoluteUrl instanceof urijs)) {
@@ -442,13 +451,31 @@ function getStore(config, router) {
           relative = absoluteUrl;
         }
         else {
-          relative = absoluteUrl.relativeTo(state.catalogUrl);
+          relative = absoluteUrl.relativeTo(catalogUrl);
           if (relative.equals(absoluteUrl)) {
             return true;
           }
         }
         let relativeStr = relative.toString();
         return relativeStr.startsWith('//') || relativeStr.startsWith('../');
+      },
+      // The catalog URL the current credentials belong to. If no catalog URL
+      // is known (e.g. right after switching catalogs), fall back to the
+      // origin of the currently shown page.
+      credentialCatalogUrl: state => {
+        if (hasText(state.catalogUrl)) {
+          return state.catalogUrl;
+        }
+        return getUrlOrigin(state.url);
+      },
+      // Checks whether credentials may be sent to the given URL. Credentials
+      // are bound to the catalog they were issued for, so they are never sent
+      // to a catalog that was selected later.
+      isCredentialUrl: (state, getters, rootState) => (url, scope = rootState.auth.scope) => {
+        if (!hasText(scope)) {
+          return false;
+        }
+        return !getters.isExternalUrl(url, true, scope);
       },
       getRequestUrl: (state, getters) => (url, baseUrl = null, addLocalQueryParams = false) => {
         try {
@@ -556,14 +583,6 @@ function getStore(config, router) {
         }
         else {
           state[type][key] = value;
-        }
-      },
-      setRequestHeader(state, { key, value }) {
-        if (typeof value === 'undefined') {
-          delete state.requestHeaders[key];
-        }
-        else {
-          state.requestHeaders[key] = value;
         }
       },
       state(state, newState) {
@@ -883,6 +902,15 @@ function getStore(config, router) {
         } catch (error) {
           if (noRetry || !cx.state.authConfig || cx.getters['auth/isLoggedIn'] || !isAuthenticationError(error)) {
             throw error;
+          }
+          // Remember which catalog the login is for. This is relevant when the
+          // catalog URL is not known yet, e.g. when the landing page of a
+          // catalog is protected and the request failed before the catalog
+          // could be loaded.
+          const href = isObject(link) ? link.href : link;
+          if (typeof href === 'string') {
+            const url = toAbsolute(href, cx.state.url, false);
+            cx.commit('auth/setPendingScope', cx.getters.credentialCatalogUrl || getUrlOrigin(url));
           }
           return await new Promise((resolve, reject) => {
             cx.commit('auth/addAction', {

@@ -35,6 +35,9 @@ export function stacRequestOptions(cx, link) {
   if (!cx.getters.isExternalUrl(url)) {
     Object.assign(headers, cx.state.requestHeaders);
   }
+  if (cx.getters.isCredentialUrl(url)) {
+    Object.assign(headers, cx.rootState.auth.headers);
+  }
   if (isObject(link.headers)) {
     Object.assign(headers, link.headers);
   }
